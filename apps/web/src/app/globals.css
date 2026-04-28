@@ -2,8 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: light;
+@layer base {
+  :root {
+    /* Timewell brand mapped to shadcn tokens */
+    --background: 40 33% 93%;        /* cream #F4F1EA */
+    --foreground: 0 0% 10%;          /* ink  #1A1A1A  */
+
+    --card: 40 33% 93%;
+    --card-foreground: 0 0% 10%;
+
+    --popover: 40 33% 96%;
+    --popover-foreground: 0 0% 10%;
+
+    --primary: 118 18% 29%;          /* forest #3F5A3A */
+    --primary-foreground: 40 33% 93%;
+
+    --secondary: 40 20% 86%;
+    --secondary-foreground: 0 0% 10%;
+
+    --muted: 40 20% 86%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 118 18% 29%;
+    --accent-foreground: 40 33% 93%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 40 15% 80%;
+    --input: 40 15% 80%;
+    --ring: 118 18% 29%;
+
+    --radius: 0.5rem;
+
+    color-scheme: light;
+  }
 }
 
 html,
