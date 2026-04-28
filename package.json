@@ -1,0 +1,27 @@
+{
+  "name": "timewell",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Timewell — collaborative digital memory-card platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:api": "npm run dev -w @timewell/api",
+    "dev:web": "npm run dev -w @timewell/web",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "setup:local": "docker compose up -d && npm install && npm run build -w @timewell/shared"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": ["node", "jest"],
+    "baseUrl": "src",
+    "paths": {
+      "@timewell/shared": ["../../../packages/shared/src/index.ts"],
+      "@timewell/shared/*": ["../../../packages/shared/src/*"]
+    }
+  },
+  "include": ["src/**/*"]
+}
