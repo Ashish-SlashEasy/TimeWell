@@ -1,3 +1,4 @@
+import path from "path";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { Express } from "express";
@@ -33,6 +34,11 @@ export function createApp(): Express {
         stream: { write: (msg) => logger.http(msg.trim()) },
       }),
     );
+  }
+
+  // Serve locally-stored uploads in dev (replaced by S3 in prod)
+  if (!env.isProd) {
+    app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
   }
 
   app.use("/api", apiRouter);

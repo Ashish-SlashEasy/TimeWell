@@ -12,6 +12,8 @@
     "test": "jest --runInBand --detectOpenHandles --forceExit"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1038.0",
+    "@aws-sdk/lib-storage": "^3.1038.0",
     "@timewell/shared": "*",
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.6",
@@ -23,7 +25,9 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.5.0",
     "morgan": "^1.10.0",
+    "multer": "^2.1.1",
     "rate-limit-mongo": "^2.3.2",
+    "sharp": "^0.34.5",
     "uuid": "^10.0.0",
     "winston": "^3.13.0",
     "zod": "^3.23.8"
@@ -36,6 +40,7 @@
     "@types/jest": "^29.5.12",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/morgan": "^1.9.9",
+    "@types/multer": "^2.1.0",
     "@types/node": "^20.14.10",
     "@types/supertest": "^6.0.2",
     "@types/uuid": "^10.0.0",

@@ -18,6 +18,13 @@ export const CardSettingsSchema = z.object({
 });
 export type CardSettings = z.infer<typeof CardSettingsSchema>;
 
+export const CreateCardSchema = z.object({
+  title: z.string().trim().max(40).optional(),
+  message: z.string().trim().max(80).optional(),
+  orientation: CardOrientation.optional().default("landscape"),
+});
+export type CreateCardInput = z.infer<typeof CreateCardSchema>;
+
 export const UpdateCardSchema = z.object({
   title: z.string().max(40).optional(),
   message: z.string().max(80).optional(),

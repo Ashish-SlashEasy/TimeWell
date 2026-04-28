@@ -1,3 +1,4 @@
+import { ParamsDictionary } from "express-serve-static-core";
 import { Request, Response } from "express";
 import { ChangePasswordInput, UpdateProfileInput } from "@timewell/shared";
 import { asyncHandler } from "../../utils/asyncHandler";
@@ -22,7 +23,7 @@ export const getQuotaController = asyncHandler(async (req, res) => {
   res.status(200).json({ data: quota });
 });
 
-export const updateMeController = asyncHandler<Request<unknown, unknown, UpdateProfileInput>>(
+export const updateMeController = asyncHandler<Request<ParamsDictionary, unknown, UpdateProfileInput>>(
   async (req, res) => {
     const userId = requireUserId(req);
     const result = await usersService.updateProfile(userId, req.body);
@@ -31,7 +32,7 @@ export const updateMeController = asyncHandler<Request<unknown, unknown, UpdateP
 );
 
 export const changePasswordController = asyncHandler<
-  Request<unknown, unknown, ChangePasswordInput>
+  Request<ParamsDictionary, unknown, ChangePasswordInput>
 >(async (req, res) => {
   const userId = requireUserId(req);
   await authService.changePassword(userId, req.body.currentPassword, req.body.newPassword);
@@ -39,7 +40,7 @@ export const changePasswordController = asyncHandler<
 });
 
 export const confirmEmailChangeController = asyncHandler<
-  Request<unknown, unknown, { token: string }>
+  Request<ParamsDictionary, unknown, { token: string }>
 >(async (req, res) => {
   if (!req.body.token) throw new AppError({ code: "TOKEN_INVALID", statusCode: 400 });
   await authService.confirmEmailChange(req.body.token);
@@ -47,7 +48,7 @@ export const confirmEmailChangeController = asyncHandler<
 });
 
 export const confirmPhoneChangeController = asyncHandler<
-  Request<unknown, unknown, { code: string }>
+  Request<ParamsDictionary, unknown, { code: string }>
 >(async (req, res) => {
   const userId = requireUserId(req);
   if (!req.body.code) throw new AppError({ code: "TOKEN_INVALID", statusCode: 400 });

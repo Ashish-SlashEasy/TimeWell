@@ -20,8 +20,8 @@ export interface UserDoc extends Document {
 
 const UserSchema = new Schema<UserDoc>(
   {
-    email: { type: String, lowercase: true, trim: true, default: null },
-    phone: { type: String, trim: true, default: null },
+    email: { type: String, lowercase: true, trim: true },
+    phone: { type: String, trim: true },
     passwordHash: { type: String, default: null, select: false },
     firstName: { type: String, trim: true, default: null, maxlength: 60 },
     lastName: { type: String, trim: true, default: null, maxlength: 60 },

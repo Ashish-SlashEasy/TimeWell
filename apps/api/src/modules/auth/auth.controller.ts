@@ -1,3 +1,4 @@
+import { ParamsDictionary } from "express-serve-static-core";
 import { Request, Response } from "express";
 import {
   ForgotPasswordInput,
@@ -19,7 +20,7 @@ import {
 
 const ACK = { ok: true } as const;
 
-export const signupController = asyncHandler<Request<unknown, unknown, SignupInput>>(
+export const signupController = asyncHandler<Request<ParamsDictionary, unknown, SignupInput>>(
   async (req, res) => {
     await authService.signup({ email: req.body.email, phone: req.body.phone });
     // Same response whether new or existing — Section 3 no-enumeration.
@@ -27,14 +28,14 @@ export const signupController = asyncHandler<Request<unknown, unknown, SignupInp
   },
 );
 
-export const magicLinkController = asyncHandler<Request<unknown, unknown, MagicLinkRequestInput>>(
+export const magicLinkController = asyncHandler<Request<ParamsDictionary, unknown, MagicLinkRequestInput>>(
   async (req, res) => {
     await authService.requestMagicLink({ email: req.body.email, phone: req.body.phone });
     res.status(202).json({ data: ACK });
   },
 );
 
-export const verifyController = asyncHandler<Request<unknown, unknown, VerifyInput>>(
+export const verifyController = asyncHandler<Request<ParamsDictionary, unknown, VerifyInput>>(
   async (req, res) => {
     const result = await authService.verify({
       token: req.body.token,
@@ -53,7 +54,7 @@ export const verifyController = asyncHandler<Request<unknown, unknown, VerifyInp
   },
 );
 
-export const loginController = asyncHandler<Request<unknown, unknown, LoginInput>>(
+export const loginController = asyncHandler<Request<ParamsDictionary, unknown, LoginInput>>(
   async (req, res) => {
     const result = await authService.login(
       { email: req.body.email, phone: req.body.phone },
@@ -81,7 +82,7 @@ export const logoutController = asyncHandler(async (_req, res) => {
 });
 
 export const forgotPasswordController = asyncHandler<
-  Request<unknown, unknown, ForgotPasswordInput>
+  Request<ParamsDictionary, unknown, ForgotPasswordInput>
 >(async (req, res) => {
   // Validate identifier shape (re-validation isn't strictly needed since route uses validate())
   IdentifierSchema.parse(req.body);
@@ -90,7 +91,7 @@ export const forgotPasswordController = asyncHandler<
 });
 
 export const resetPasswordController = asyncHandler<
-  Request<unknown, unknown, ResetPasswordInput>
+  Request<ParamsDictionary, unknown, ResetPasswordInput>
 >(async (req, res) => {
   await authService.resetPassword(req.body.token, req.body.newPassword);
   res.status(200).json({ data: ACK });
