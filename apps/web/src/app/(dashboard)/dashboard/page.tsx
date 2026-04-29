@@ -4,8 +4,6 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { cardsApi } from "@/lib/cards";
-import { clearAccessToken } from "@/lib/authStore";
-import { api } from "@/lib/api";
 import { CardGrid } from "@/components/cards/CardGrid";
 import { CreateCardModal } from "@/components/cards/CreateCardModal";
 import { Button } from "@/components/ui/button";
@@ -21,17 +19,6 @@ export default function DashboardPage() {
     queryFn: cardsApi.list,
   });
 
-  async function handleLogout() {
-    try {
-      await api.post("/auth/logout");
-    } catch {
-      // ignore
-    }
-    clearAccessToken();
-    queryClient.clear();
-    router.replace("/signin");
-  }
-
   function handleCardCreated(cardId: string) {
     setShowCreate(false);
     queryClient.invalidateQueries({ queryKey: ["cards"] });
@@ -40,26 +27,13 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Header */}
-      <header className="border-b bg-card sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <span className="font-serif text-xl font-semibold">Timewell</span>
-          <div className="flex items-center gap-3">
-            <Button onClick={() => setShowCreate(true)} size="sm">
-              + New card
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              Sign out
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main */}
-      <main className="max-w-5xl mx-auto px-4 py-8">
+      <main className="max-w-4xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-serif font-semibold">Your cards</h1>
-          <span className="text-sm text-muted-foreground">{cards.length} card{cards.length !== 1 ? "s" : ""}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">{cards.length} card{cards.length !== 1 ? "s" : ""}</span>
+            <Button onClick={() => setShowCreate(true)} size="sm">+ New card</Button>
+          </div>
         </div>
 
         <Separator className="mb-6" />

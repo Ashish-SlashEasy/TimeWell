@@ -124,9 +124,10 @@ describe("POST /api/auth/verify (OTP)", () => {
 
   it("rejects a wrong code", async () => {
     await request(app).post("/api/auth/signup").send({ phone: "+14155559999" });
+    // 999999 is never the dev fixed code (000000) so it is always wrong
     const res = await request(app)
       .post("/api/auth/verify")
-      .send({ code: "000000", phone: "+14155559999" });
+      .send({ code: "999999", phone: "+14155559999" });
     expect(res.status).toBe(400);
   });
 });
@@ -263,6 +264,161 @@ describe("Magic link request endpoint", () => {
     const res = await request(app).post("/api/auth/magic-link").send({ email: "ivy@example.com" });
     expect(res.status).toBe(202);
     expect(getCapturedEmails()).toHaveLength(1);
+  });
+});
+
+// ─── isNew flag ───────────────────────────────────────────────────────────────
+
+describe("verify — isNew flag", () => {
+  async function signupAndVerify(email: string) {
+    await request(app).post("/api/auth/signup").send({ email });
+    const emails = getCapturedEmails();
+    const token = extractTokenFromMagicLink(emails[emails.length - 1].text);
+    return request(app).post("/api/auth/verify").send({ token });
+  }
+
+  it("returns isNew: true on first-ever verification", async () => {
+    const res = await signupAndVerify("newuser@example.com");
+    expect(res.status).toBe(200);
+    expect(res.body.data.isNew).toBe(true);
+  });
+
+  it("returns isNew: false when a verified user re-authenticates", async () => {
+    // First verify — marks emailVerified true
+    await signupAndVerify("returning@example.com");
+    // Second magic link for the same email
+    const res = await signupAndVerify("returning@example.com");
+    expect(res.status).toBe(200);
+    expect(res.body.data.isNew).toBe(false);
+  });
+
+  it("returns isNew: true for a brand-new phone user after OTP", async () => {
+    await request(app).post("/api/auth/signup").send({ phone: "+14155550201" });
+    const sms = getSms();
+    const code = /\b(\d{6})\b/.exec(sms[sms.length - 1].body)![1];
+    const res = await request(app)
+      .post("/api/auth/verify")
+      .send({ code, phone: "+14155550201" });
+    expect(res.status).toBe(200);
+    expect(res.body.data.isNew).toBe(true);
+  });
+});
+
+// ─── Dev OTP bypass ───────────────────────────────────────────────────────────
+
+describe("OTP SMS capture in test environment", () => {
+  it("captures OTP to in-memory store and body contains a 6-digit code", async () => {
+    await request(app).post("/api/auth/signup").send({ phone: "+14155550202" });
+    const sms = getSms();
+    const last = sms[sms.length - 1];
+    expect(last.to).toBe("+14155550202");
+    expect(last.body).toMatch(/\b\d{6}\b/);
+  });
+
+  it("verifies using the captured code from in-memory SMS store", async () => {
+    await request(app).post("/api/auth/signup").send({ phone: "+14155550203" });
+    const sms = getSms();
+    const code = /\b(\d{6})\b/.exec(sms[sms.length - 1].body)![1];
+    const res = await request(app)
+      .post("/api/auth/verify")
+      .send({ code, phone: "+14155550203" });
+    expect(res.status).toBe(200);
+    expect(res.body.data.accessToken).toBeDefined();
+  });
+});
+
+// ─── POST /api/auth/set-password ──────────────────────────────────────────────
+
+describe("POST /api/auth/set-password", () => {
+  async function signupAndGetAccessToken(email: string): Promise<string> {
+    await request(app).post("/api/auth/signup").send({ email });
+    const emails = getCapturedEmails();
+    const token = extractTokenFromMagicLink(emails[emails.length - 1].text);
+    const res = await request(app).post("/api/auth/verify").send({ token });
+    return res.body.data.accessToken as string;
+  }
+
+  it("sets a password for a verified user who has none", async () => {
+    const accessToken = await signupAndGetAccessToken("setpwd1@example.com");
+
+    const res = await request(app)
+      .post("/api/auth/set-password")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ password: "newpassword123" });
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual({ ok: true });
+  });
+
+  it("allows login with the newly set password immediately after", async () => {
+    const accessToken = await signupAndGetAccessToken("setpwd2@example.com");
+
+    await request(app)
+      .post("/api/auth/set-password")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ password: "mypassword99" });
+
+    const loginRes = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "setpwd2@example.com", password: "mypassword99" });
+    expect(loginRes.status).toBe(200);
+    expect(loginRes.body.data.accessToken).toBeDefined();
+  });
+
+  it("overwrites an existing password", async () => {
+    const pwHash = await hashPassword("oldpassword");
+    await User.create({ email: "setpwd3@example.com", emailVerified: true, passwordHash: pwHash });
+
+    // login to get access token
+    const loginRes = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "setpwd3@example.com", password: "oldpassword" });
+    const accessToken = loginRes.body.data.accessToken as string;
+
+    await request(app)
+      .post("/api/auth/set-password")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ password: "brandnewpassword" });
+
+    // Old password rejected
+    const oldAttempt = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "setpwd3@example.com", password: "oldpassword" });
+    expect(oldAttempt.status).toBe(401);
+
+    // New password accepted
+    const newAttempt = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "setpwd3@example.com", password: "brandnewpassword" });
+    expect(newAttempt.status).toBe(200);
+  });
+
+  it("returns 401 without an auth token", async () => {
+    const res = await request(app)
+      .post("/api/auth/set-password")
+      .send({ password: "somepassword" });
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 400 for a password shorter than 8 characters", async () => {
+    const accessToken = await signupAndGetAccessToken("setpwd4@example.com");
+
+    const res = await request(app)
+      .post("/api/auth/set-password")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ password: "short" });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns 400 when password field is missing", async () => {
+    const accessToken = await signupAndGetAccessToken("setpwd5@example.com");
+
+    const res = await request(app)
+      .post("/api/auth/set-password")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({});
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
   });
 });
 

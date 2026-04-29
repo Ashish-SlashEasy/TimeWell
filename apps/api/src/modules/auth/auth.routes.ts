@@ -4,10 +4,12 @@ import {
   LoginSchema,
   MagicLinkRequestSchema,
   ResetPasswordSchema,
+  SetPasswordSchema,
   SignupSchema,
   VerifySchema,
 } from "@timewell/shared";
 import { validate } from "../../middleware/validate";
+import { requireAuth } from "../../middleware/auth";
 import {
   forgotPasswordRateLimiter,
   loginRateLimiter,
@@ -21,6 +23,7 @@ import {
   magicLinkController,
   refreshController,
   resetPasswordController,
+  setPasswordController,
   signupController,
   verifyController,
 } from "./auth.controller";
@@ -45,3 +48,4 @@ authRouter.post(
   forgotPasswordController,
 );
 authRouter.post("/reset-password", validate(ResetPasswordSchema), resetPasswordController);
+authRouter.post("/set-password", requireAuth, validate(SetPasswordSchema), setPasswordController);

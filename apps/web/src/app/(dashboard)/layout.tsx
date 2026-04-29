@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getAccessToken } from "@/lib/authStore";
+import { getAccessToken, setAccessToken, clearAccessToken } from "@/lib/authStore";
 import { api } from "@/lib/api";
-import { setAccessToken, clearAccessToken } from "@/lib/authStore";
+import { Sidebar } from "@/components/layout/Sidebar";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -12,17 +12,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     async function ensureAuth() {
       if (getAccessToken()) return;
-      // No in-memory token — try refresh cookie
       try {
         const res = await api.post<{ data: { accessToken: string } }>("/auth/refresh");
         setAccessToken(res.data.data.accessToken);
       } catch {
         clearAccessToken();
-        router.replace("/signin");
+        router.replace("/login");
       }
     }
     ensureAuth();
   }, [router]);
 
-  return <>{children}</>;
+  return (
+    <div className="flex min-h-screen bg-background">
+      <Sidebar />
+      <div className="flex-1 min-w-0">{children}</div>
+    </div>
+  );
 }

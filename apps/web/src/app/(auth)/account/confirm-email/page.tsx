@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { api, getFriendlyMessage } from "@/lib/api";
-import { setAccessToken } from "@/lib/authStore";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 
-export default function VerifyPage() {
-  const router = useRouter();
+export default function ConfirmEmailChangePage() {
   const params = useSearchParams();
+  const router = useRouter();
   const token = params.get("token");
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
@@ -18,17 +17,14 @@ export default function VerifyPage() {
   useEffect(() => {
     if (!token) {
       setStatus("error");
-      setMessage("No verification token found in the link.");
+      setMessage("No token found in the link.");
       return;
     }
-
     api
-      .post<{ data: { accessToken: string; isNew: boolean } }>("/auth/verify", { token })
-      .then((res) => {
-        setAccessToken(res.data.data.accessToken);
+      .post("/users/me/confirm-email-change", { token })
+      .then(() => {
         setStatus("success");
-        const dest = res.data.data.isNew ? "/auth/set-password" : "/dashboard";
-        setTimeout(() => router.replace(dest), 1000);
+        setTimeout(() => router.replace("/account"), 2000);
       })
       .catch((e) => {
         setStatus("error");
@@ -40,21 +36,21 @@ export default function VerifyPage() {
     <div className="min-h-screen flex items-center justify-center px-4">
       <Card className="w-full max-w-md text-center">
         <CardHeader>
-          <CardTitle className="font-serif text-3xl">
-            {status === "loading" && "Verifying…"}
-            {status === "success" && "Signed in!"}
-            {status === "error" && "Link expired"}
+          <CardTitle className="font-serif text-2xl">
+            {status === "loading" && "Confirming…"}
+            {status === "success" && "Email updated!"}
+            {status === "error" && "Link invalid"}
           </CardTitle>
           <CardDescription>
             {status === "loading" && "Please wait a moment."}
-            {status === "success" && "Redirecting you to your dashboard…"}
+            {status === "success" && "Your email address has been updated. Redirecting…"}
             {status === "error" && message}
           </CardDescription>
         </CardHeader>
         {status === "error" && (
           <CardContent>
-            <Button asChild>
-              <Link href="/login">Request a new link</Link>
+            <Button variant="outline" asChild>
+              <Link href="/account">Back to Account</Link>
             </Button>
           </CardContent>
         )}

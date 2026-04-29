@@ -6,6 +6,7 @@ import {
   LoginInput,
   MagicLinkRequestInput,
   ResetPasswordInput,
+  SetPasswordInput,
   SignupInput,
   VerifyInput,
 } from "@timewell/shared";
@@ -94,5 +95,13 @@ export const resetPasswordController = asyncHandler<
   Request<ParamsDictionary, unknown, ResetPasswordInput>
 >(async (req, res) => {
   await authService.resetPassword(req.body.token, req.body.newPassword);
+  res.status(200).json({ data: ACK });
+});
+
+export const setPasswordController = asyncHandler<
+  Request<ParamsDictionary, unknown, SetPasswordInput>
+>(async (req, res) => {
+  if (!req.user) throw AppError.unauthorized();
+  await authService.setPassword(req.user.id, req.body.password);
   res.status(200).json({ data: ACK });
 });

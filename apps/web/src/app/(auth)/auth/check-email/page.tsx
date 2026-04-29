@@ -23,7 +23,7 @@ export default function CheckEmailPage({
             Didn&apos;t get it? Check your spam folder or try again.
           </p>
           <Button variant="outline" asChild>
-            <Link href="/signin">Try a different address</Link>
+            <Link href="/signup">Try a different address</Link>
           </Button>
         </CardContent>
       </Card>

@@ -5,8 +5,7 @@ export default function HomePage() {
     <main className="mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-center px-6 py-16 text-center">
       <h1 className="font-serif text-5xl text-forest">Timewell</h1>
       <p className="mt-4 max-w-md text-base text-ink/70">
-        Collaborative digital memory cards. The web client is bootstrapped — the full UI is built
-        in milestones M2 through M5.
+        Collaborative digital memory cards.
       </p>
       <div className="mt-8 flex gap-3">
         <Link

@@ -8,22 +8,46 @@ export interface EmailMessage {
   html?: string;
 }
 
-/**
- * Phase-1 email transport: log + capture in-memory for tests.
- * Phase-2 will swap to a SendGrid client behind this interface.
- */
 const captured: EmailMessage[] = [];
+
+function isRealSendGridKey(): boolean {
+  return env.SENDGRID_API_KEY.startsWith("SG.") && env.SENDGRID_API_KEY !== "SG.placeholder";
+}
 
 export async function sendEmail(msg: EmailMessage): Promise<void> {
   if (env.isTest) {
     captured.push(msg);
     return;
   }
-  logger.info("email:send", {
-    to: msg.to,
-    subject: msg.subject,
-    from: `${env.SENDGRID_FROM_NAME} <${env.SENDGRID_FROM_EMAIL}>`,
-  });
+
+  if (!isRealSendGridKey()) {
+    // Dev fallback: print full email body to terminal so magic links are usable without real credentials
+    logger.info("────────────────────────────────────────");
+    logger.info(`DEV EMAIL → ${msg.to} | ${msg.subject}`);
+    logger.info(msg.text);
+    logger.info("────────────────────────────────────────");
+    return;
+  }
+
+  try {
+    const mod = await import("@sendgrid/mail");
+    // Handle both CJS (mod) and ESM (mod.default) interop
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sgMail: any = (mod as any).default ?? mod;
+    sgMail.setApiKey(env.SENDGRID_API_KEY);
+    await sgMail.send({
+      to: msg.to,
+      from: { email: env.SENDGRID_FROM_EMAIL, name: env.SENDGRID_FROM_NAME },
+      subject: msg.subject,
+      text: msg.text,
+      html: msg.html,
+    });
+    logger.info("email:sent", { to: msg.to, subject: msg.subject });
+  } catch (err: unknown) {
+    const e = err as { message?: string; response?: { body?: unknown } };
+    logger.error("email:send-failed", { to: msg.to, message: e.message, body: e.response?.body });
+    throw err;
+  }
 }
 
 export function getCapturedEmails(): EmailMessage[] {
