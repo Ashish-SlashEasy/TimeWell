@@ -70,7 +70,7 @@ export default function CheckoutSuccessPage() {
             <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mx-auto text-2xl">⚠️</div>
             <div>
               <h1 className="font-serif text-3xl font-normal text-foreground mb-2">Something went wrong</h1>
-              <p className="text-muted-foreground">We couldn't confirm your payment. Please contact support if you were charged.</p>
+              <p className="text-muted-foreground">We couldn&apos;t confirm your payment. Please contact support if you were charged.</p>
             </div>
             <Button variant="outline" className="w-full h-11" onClick={() => router.push("/dashboard")}>
               Go to Dashboard
