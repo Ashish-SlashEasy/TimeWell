@@ -30,18 +30,18 @@ const EnvSchema = z.object({
     .optional()
     .transform((v) => v === "true"),
 
-  SENDGRID_API_KEY: z.string().min(1),
-  SENDGRID_FROM_EMAIL: z.string().email(),
-  SENDGRID_FROM_NAME: z.string().min(1),
+  SENDGRID_API_KEY: z.string().optional().default(""),
+  SENDGRID_FROM_EMAIL: z.string().optional().default(""),
+  SENDGRID_FROM_NAME: z.string().optional().default(""),
 
-  TWILIO_ACCOUNT_SID: z.string().min(1),
-  TWILIO_AUTH_TOKEN: z.string().min(1),
-  TWILIO_FROM_NUMBER: z.string().regex(/^\+[1-9]\d{6,14}$/),
+  TWILIO_ACCOUNT_SID: z.string().optional().default(""),
+  TWILIO_AUTH_TOKEN: z.string().optional().default(""),
+  TWILIO_FROM_NUMBER: z.string().optional().default(""),
 
-  AWS_REGION: z.string().min(1),
-  AWS_ACCESS_KEY_ID: z.string().min(1),
-  AWS_SECRET_ACCESS_KEY: z.string().min(1),
-  S3_BUCKET: z.string().min(1),
+  AWS_REGION: z.string().optional().default(""),
+  AWS_ACCESS_KEY_ID: z.string().optional().default(""),
+  AWS_SECRET_ACCESS_KEY: z.string().optional().default(""),
+  S3_BUCKET: z.string().optional().default(""),
   S3_ENDPOINT: z.string().url().optional().or(z.literal("")),
   S3_FORCE_PATH_STYLE: z
     .string()
