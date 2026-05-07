@@ -246,7 +246,7 @@ export default function AccountPage() {
 
   if (isLoading) {
     return (
-      <div className="px-8 py-8 space-y-6 animate-pulse max-w-xl">
+      <div className="px-4 sm:px-8 py-6 sm:py-8 space-y-6 animate-pulse max-w-xl">
         <div className="h-8 w-32 bg-muted rounded" />
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-14 bg-muted rounded" />)}
@@ -256,7 +256,7 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="px-8 py-8 max-w-2xl">
+    <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-2xl">
       <h1 className="font-serif text-3xl text-foreground mb-6">Account</h1>
 
       {/* Email-change banner */}
@@ -289,7 +289,7 @@ export default function AccountPage() {
         {/* View mode */}
         {!editing && !phoneOtpMode && (
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FieldView label="First Name" value={user?.firstName ?? ""} />
               <FieldView label="Last Name" value={user?.lastName ?? ""} />
             </div>
@@ -308,7 +308,7 @@ export default function AccountPage() {
         {/* Edit mode */}
         {editing && (
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FieldEdit
                 label="First Name"
                 value={fields.firstName}
@@ -367,6 +367,22 @@ export default function AccountPage() {
             {otpError && <p className="text-sm text-destructive">{otpError}</p>}
           </div>
         )}
+      </div>
+
+      {/* Log out */}
+      <div className="mt-6">
+        <Button
+          variant="outline"
+          className="text-destructive border-destructive/30 hover:bg-destructive/5 hover:text-destructive"
+          onClick={async () => {
+            try { await api.post("/auth/logout"); } catch { /* ignore */ }
+            clearAccessToken();
+            queryClient.clear();
+            router.replace("/login");
+          }}
+        >
+          Log Out
+        </Button>
       </div>
 
       {/* Password change modal */}

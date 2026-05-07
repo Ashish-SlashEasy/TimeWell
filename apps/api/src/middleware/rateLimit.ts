@@ -56,3 +56,18 @@ export const forgotPasswordRateLimiter = build({
   windowMs: 60 * 60 * 1000,
   max: 5,
 });
+
+// Support contact: 5 per hour per IP
+export const contactRateLimiter = build({
+  name: "contact",
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+});
+
+// Password-gate verify: 10 attempts per 15 min per IP+shareToken
+export const viewerPasswordRateLimiter = build({
+  name: "viewer-password",
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => `viewer-pw:${req.ip}:${req.params.token ?? ""}`,
+});

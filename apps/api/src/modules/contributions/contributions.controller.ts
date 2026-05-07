@@ -22,6 +22,15 @@ export const contributionsController = {
     res.status(201).json({ data: contributionsService.toPublic(contribution) });
   },
 
+  async uploadPublic(req: Request, res: Response) {
+    if (!req.file) {
+      res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "No file provided." } });
+      return;
+    }
+    const contribution = await contributionsService.uploadByShareToken(req.params.token, req.file, req.body);
+    res.status(201).json({ data: contributionsService.toPublic(contribution) });
+  },
+
   async moderate(req: Request, res: Response) {
     const contribution = await contributionsService.moderate(
       req.params.contributionId,

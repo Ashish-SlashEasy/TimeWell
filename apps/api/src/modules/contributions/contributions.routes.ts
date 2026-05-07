@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireAuth } from "../../middleware/auth";
 import { validate } from "../../middleware/validate";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { imageUpload } from "../../utils/upload";
+import { imageUpload, mediaUpload } from "../../utils/upload";
 import { contributionsController } from "./contributions.controller";
 
 export const contributionsRouter: Router = Router({ mergeParams: true });

@@ -9,6 +9,8 @@ import { logger } from "./config/logger";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { requestIdMiddleware } from "./middleware/requestId";
 import { apiRouter } from "./routes";
+import { asyncHandler } from "./utils/asyncHandler";
+import { checkoutController } from "./modules/checkout/checkout.controller";
 
 export function createApp(): Express {
   const app = express();
@@ -24,6 +26,14 @@ export function createApp(): Express {
       credentials: true,
     }),
   );
+
+  // Stripe webhook must receive the raw body before express.json() parses it
+  app.post(
+    "/api/webhooks/stripe",
+    express.raw({ type: "application/json" }),
+    asyncHandler(checkoutController.webhook),
+  );
+
   app.use(express.json({ limit: "1mb" }));
   app.use(express.urlencoded({ extended: true, limit: "1mb" }));
   app.use(cookieParser());
@@ -38,7 +48,15 @@ export function createApp(): Express {
 
   // Serve locally-stored uploads in dev (replaced by S3 in prod)
   if (!env.isProd) {
-    app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
+    app.use(
+      "/uploads",
+      (_req, res, next) => {
+        // Allow cross-origin image loads from the Next.js dev server
+        res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+        next();
+      },
+      express.static(path.resolve(process.cwd(), "uploads")),
+    );
   }
 
   app.use("/api", apiRouter);

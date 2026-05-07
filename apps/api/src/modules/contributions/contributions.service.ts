@@ -4,6 +4,14 @@ import { Card, Contribution, ContributionDoc } from "../../models";
 import { AppError } from "../../utils/AppError";
 import { uploadBuffer } from "../../utils/storage";
 
+type MediaType = "photo" | "video" | "audio";
+
+function detectMediaType(mimeType: string): MediaType {
+  if (mimeType.startsWith("video/")) return "video";
+  if (mimeType.startsWith("audio/")) return "audio";
+  return "photo";
+}
+
 export class ContributionsService {
   async list(cardId: string, ownerId: string): Promise<ContributionDoc[]> {
     const card = await Card.findOne({
@@ -24,24 +32,45 @@ export class ContributionsService {
     if (!card.settings.allowContributions) {
       throw new AppError({ code: "CONTRIBUTIONS_DISABLED", statusCode: 422 });
     }
+    return this._storeFile(card._id.toString(), file, body);
+  }
 
+  async uploadByShareToken(
+    shareToken: string,
+    file: Express.Multer.File,
+    body: { senderName: string; senderMessage?: string },
+  ): Promise<ContributionDoc> {
+    const card = await Card.findOne({ shareToken, status: { $nin: ["deleted", "archived"] } });
+    if (!card) throw AppError.notFound();
+    if (!card.settings.allowContributions) {
+      throw new AppError({ code: "CONTRIBUTIONS_DISABLED", statusCode: 422, message: "Contributions are disabled for this card." });
+    }
+    return this._storeFile(card._id.toString(), file, body);
+  }
+
+  private async _storeFile(
+    cardId: string,
+    file: Express.Multer.File,
+    body: { senderName: string; senderMessage?: string },
+  ): Promise<ContributionDoc> {
+    const mediaType = detectMediaType(file.mimetype);
     const base = `cards/${cardId}/contributions/${Date.now()}`;
-    const meta = await sharp(file.buffer).metadata();
+    let mediaKey: string;
 
-    const [webBuf, thumbBuf] = await Promise.all([
-      sharp(file.buffer).resize({ width: 1200, withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer(),
-      sharp(file.buffer).resize({ width: 400, height: 400, fit: "cover" }).jpeg({ quality: 75 }).toBuffer(),
-    ]);
+    if (mediaType === "photo") {
+      const [webBuf] = await Promise.all([
+        sharp(file.buffer).resize({ width: 1200, withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer(),
+      ]);
+      mediaKey = await uploadBuffer(`${base}/web.jpg`, webBuf, "image/jpeg");
+    } else {
+      // Video or audio — upload original directly to Cloudinary
+      const ext = file.originalname.split(".").pop() ?? "bin";
+      mediaKey = await uploadBuffer(`${base}/original.${ext}`, file.buffer, file.mimetype);
+    }
 
-    const [webUrl, thumbUrl] = await Promise.all([
-      uploadBuffer(`${base}/web.jpg`, webBuf, "image/jpeg"),
-      uploadBuffer(`${base}/thumb.jpg`, thumbBuf, "image/jpeg"),
-    ]);
-
-    const mediaKey = webUrl;
     return Contribution.create({
       cardId: new Types.ObjectId(cardId),
-      mediaType: "photo",
+      mediaType,
       mediaKey,
       senderName: body.senderName,
       senderMessage: body.senderMessage ?? null,
@@ -56,15 +85,9 @@ export class ContributionsService {
   ): Promise<ContributionDoc> {
     const contribution = await Contribution.findById(contributionId);
     if (!contribution) throw AppError.notFound();
-
-    const card = await Card.findOne({
-      _id: contribution.cardId,
-      ownerId: new Types.ObjectId(ownerId),
-    });
+    const card = await Card.findOne({ _id: contribution.cardId, ownerId: new Types.ObjectId(ownerId) });
     if (!card) throw new AppError({ code: "FORBIDDEN", statusCode: 403 });
-
-    contribution.status =
-      action === "approve" ? "public" : action === "reject" ? "rejected" : "removed";
+    contribution.status = action === "approve" ? "public" : action === "reject" ? "rejected" : "removed";
     await contribution.save();
     return contribution;
   }

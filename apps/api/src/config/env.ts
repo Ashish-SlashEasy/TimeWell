@@ -48,6 +48,14 @@ const EnvSchema = z.object({
     .optional()
     .transform((v) => v === "true"),
 
+  CLOUDINARY_CLOUD_NAME: z.string().optional().default(""),
+  CLOUDINARY_API_KEY: z.string().optional().default(""),
+  CLOUDINARY_API_SECRET: z.string().optional().default(""),
+
+  VIEWER_JWT_SECRET: z.string().min(1).default("dev-viewer-secret-change-in-prod-xxxxx"),
+
+  SUPPORT_EMAIL: z.string().optional().default(""),
+
   STRIPE_SECRET_KEY: z.string().min(1),
   STRIPE_WEBHOOK_SECRET: z.string().min(1),
 });

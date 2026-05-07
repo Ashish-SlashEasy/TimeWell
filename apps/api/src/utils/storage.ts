@@ -4,29 +4,38 @@ import { env } from "../config/env";
 
 const LOCAL_UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
 
-function useLocalStorage(): boolean {
-  if (env.isTest) return true;
-  if (env.isProd) return false;
-  return !env.S3_ENDPOINT || env.AWS_ACCESS_KEY_ID === "your_aws_access_key_id";
+function useCloudinary(): boolean {
+  return !env.isTest && Boolean(env.CLOUDINARY_CLOUD_NAME);
 }
 
-// Lazy S3 client — only instantiated when actually uploading to S3 (never in tests).
-let _s3: import("@aws-sdk/client-s3").S3Client | null = null;
-async function getS3(): Promise<import("@aws-sdk/client-s3").S3Client> {
-  if (!_s3) {
-    const { S3Client } = await import("@aws-sdk/client-s3");
-    _s3 = new S3Client({
-      region: env.AWS_REGION,
-      credentials: {
-        accessKeyId: env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
-      },
-      ...(env.S3_ENDPOINT
-        ? { endpoint: env.S3_ENDPOINT, forcePathStyle: env.S3_FORCE_PATH_STYLE }
-        : {}),
+function useLocalStorage(): boolean {
+  return !useCloudinary();
+}
+
+let _cloudinaryReady = false;
+async function getCloudinary() {
+  const { v2 } = await import("cloudinary");
+  if (!_cloudinaryReady) {
+    v2.config({
+      cloud_name: env.CLOUDINARY_CLOUD_NAME,
+      api_key: env.CLOUDINARY_API_KEY,
+      api_secret: env.CLOUDINARY_API_SECRET,
     });
+    _cloudinaryReady = true;
   }
-  return _s3;
+  return v2;
+}
+
+function resourceType(contentType: string): "image" | "video" | "raw" {
+  if (contentType.startsWith("video/") || contentType.startsWith("audio/")) return "video";
+  if (contentType.startsWith("image/")) return "image";
+  return "raw";
+}
+
+function publicIdFromUrl(url: string): string {
+  // https://res.cloudinary.com/{cloud}/{rtype}/upload/v{ver}/{public_id}.{ext}
+  const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.[^./]+)?$/);
+  return match ? match[1] : "";
 }
 
 export async function uploadBuffer(
@@ -38,34 +47,33 @@ export async function uploadBuffer(
     const dest = path.join(LOCAL_UPLOADS_DIR, key);
     await fs.mkdir(path.dirname(dest), { recursive: true });
     await fs.writeFile(dest, buffer);
-    return `/uploads/${key}`;
+    return `${env.API_PUBLIC_URL}/uploads/${key}`;
   }
 
-  const { PutObjectCommand } = await import("@aws-sdk/client-s3");
-  const s3 = await getS3();
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: env.S3_BUCKET,
-      Key: key,
-      Body: buffer,
-      ContentType: contentType,
-    }),
-  );
-  return env.S3_ENDPOINT
-    ? `${env.S3_ENDPOINT}/${env.S3_BUCKET}/${key}`
-    : `https://${env.S3_BUCKET}.s3.${env.AWS_REGION}.amazonaws.com/${key}`;
+  const cloudinary = await getCloudinary();
+  const publicId = `timewell/${key.replace(/\.[^.]+$/, "")}`;
+  const rtype = resourceType(contentType);
+
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader
+      .upload_stream({ public_id: publicId, resource_type: rtype, overwrite: true }, (err, result) => {
+        if (err || !result) reject(err ?? new Error("Cloudinary upload failed"));
+        else resolve(result.secure_url);
+      })
+      .end(buffer);
+  });
 }
 
 export async function deleteFile(key: string): Promise<void> {
   if (useLocalStorage()) {
-    try {
-      await fs.unlink(path.join(LOCAL_UPLOADS_DIR, key));
-    } catch {
-      // ignore missing file
-    }
+    try { await fs.unlink(path.join(LOCAL_UPLOADS_DIR, key)); } catch { /* ignore */ }
     return;
   }
-  const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
-  const s3 = await getS3();
-  await s3.send(new DeleteObjectCommand({ Bucket: env.S3_BUCKET, Key: key }));
+
+  const cloudinary = await getCloudinary();
+  const publicId = key.startsWith("http")
+    ? publicIdFromUrl(key)
+    : `timewell/${key.replace(/\.[^.]+$/, "")}`;
+  if (!publicId) return;
+  await cloudinary.uploader.destroy(publicId, { resource_type: "auto" }).catch(() => null);
 }
