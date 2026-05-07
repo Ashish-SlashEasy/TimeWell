@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api, getFriendlyMessage } from "@/lib/api";
 import { setAccessToken } from "@/lib/authStore";
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-export default function VerifyPage() {
+function VerifyInner() {
   const router = useRouter();
   const params = useSearchParams();
   const token = params.get("token");
@@ -60,5 +60,13 @@ export default function VerifyPage() {
         )}
       </Card>
     </div>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>}>
+      <VerifyInner />
+    </Suspense>
   );
 }

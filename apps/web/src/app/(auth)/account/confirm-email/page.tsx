@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, getFriendlyMessage } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-export default function ConfirmEmailChangePage() {
+function ConfirmEmailChangeInner() {
   const params = useSearchParams();
   const router = useRouter();
   const token = params.get("token");
@@ -56,5 +56,13 @@ export default function ConfirmEmailChangePage() {
         )}
       </Card>
     </div>
+  );
+}
+
+export default function ConfirmEmailChangePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>}>
+      <ConfirmEmailChangeInner />
+    </Suspense>
   );
 }

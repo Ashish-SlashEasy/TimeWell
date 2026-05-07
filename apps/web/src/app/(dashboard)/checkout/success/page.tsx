@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle } from "lucide-react";
 import { checkoutApi } from "@/lib/checkout";
 import { Button } from "@/components/ui/button";
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessInner() {
   const params = useSearchParams();
   const router = useRouter();
   const sessionId = params.get("session_id") ?? "";
@@ -79,5 +79,13 @@ export default function CheckoutSuccessPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin" /></div>}>
+      <CheckoutSuccessInner />
+    </Suspense>
   );
 }
