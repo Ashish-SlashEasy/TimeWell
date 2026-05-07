@@ -230,7 +230,7 @@ export class CardsService {
     return { card, viewerToken };
   }
 
-  async getPublicCard(shareToken: string, viewerToken?: string): Promise<{ card: ReturnType<typeof this.toPublic>; contributions: object[] }> {
+  async getPublicCard(shareToken: string, viewerToken?: string) {
     const card = await Card.findOne({ shareToken, status: { $nin: ["deleted", "archived"] } });
     if (!card) throw AppError.notFound();
 

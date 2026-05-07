@@ -1,6 +1,5 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 import Stripe = require("stripe");
-import type { CheckoutSessionCompletedEvent } from "stripe/cjs/resources/Events";
 import { env } from "../../config/env";
 import { Purchase } from "../../models/Purchase";
 import { User } from "../../models/User";
@@ -9,6 +8,12 @@ import { CATALOG, skuById } from "./checkout.catalog";
 import sgMail from "@sendgrid/mail";
 
 const stripe = new Stripe(env.STRIPE_SECRET_KEY, { apiVersion: "2026-04-22.dahlia" });
+
+type StripeCheckoutSession = {
+  id: string;
+  payment_intent: string | Record<string, unknown> | null;
+  metadata: Record<string, string> | null;
+};
 
 export interface CartItem {
   skuId: string;
@@ -98,12 +103,12 @@ export const checkoutService = {
     }
 
     if (event.type === "checkout.session.completed") {
-      const session = (event as CheckoutSessionCompletedEvent).data.object;
+      const session = event.data.object as StripeCheckoutSession;
       await this._fulfil(session);
     }
   },
 
-  async _fulfil(session: CheckoutSessionCompletedEvent.Data["object"]) {
+  async _fulfil(session: StripeCheckoutSession) {
     const purchase = await Purchase.findOne({ stripeSessionId: session.id });
     if (!purchase || purchase.status === "paid") return; // idempotent
 
