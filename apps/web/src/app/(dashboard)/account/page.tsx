@@ -226,7 +226,7 @@ export default function AccountPage() {
     }
   }
 
-  async function handlePasswordSave(values: z.infer<typeof PwSchema>) {
+  async function handlePasswordSave(values: z.infer<ReturnType<typeof makePwSchema>>) {
     setPwSaving(true);
     setPwError("");
     try {
