@@ -27,5 +27,6 @@ export const PublicUserSchema = z.object({
   purchasedCards: z.number().int().nonnegative(),
   usedCards: z.number().int().nonnegative(),
   createdAt: z.string(),
+  hasPassword: z.boolean(),
 });
 export type PublicUser = z.infer<typeof PublicUserSchema>;

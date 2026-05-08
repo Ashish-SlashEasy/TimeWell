@@ -234,12 +234,10 @@ export class AuthService {
     newPassword: string,
   ): Promise<void> {
     const user = await User.findById(userId).select("+passwordHash");
-    if (!user || !user.passwordHash) {
-      throw new AppError({ code: "CURRENT_PASSWORD_INCORRECT", statusCode: 400 });
-    }
-    const ok = await comparePassword(currentPassword, user.passwordHash);
-    if (!ok) {
-      throw new AppError({ code: "CURRENT_PASSWORD_INCORRECT", statusCode: 400 });
+    if (!user) throw AppError.notFound();
+    if (user.passwordHash) {
+      const ok = await comparePassword(currentPassword, user.passwordHash);
+      if (!ok) throw new AppError({ code: "CURRENT_PASSWORD_INCORRECT", statusCode: 400 });
     }
     user.passwordHash = await hashPassword(newPassword);
     await user.save();

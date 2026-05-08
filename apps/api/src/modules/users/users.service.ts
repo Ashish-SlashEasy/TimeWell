@@ -5,7 +5,7 @@ import { authService } from "../auth/auth.service";
 
 export class UsersService {
   async getProfile(userId: string): Promise<PublicUser> {
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select("+passwordHash");
     if (!user) throw AppError.notFound();
     return this.toPublic(user);
   }
@@ -65,6 +65,7 @@ export class UsersService {
       purchasedCards: user.purchasedCards,
       usedCards: user.usedCards,
       createdAt: user.createdAt.toISOString(),
+      hasPassword: !!user.passwordHash,
     };
   }
 }

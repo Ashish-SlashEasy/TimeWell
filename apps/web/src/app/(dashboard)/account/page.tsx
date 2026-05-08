@@ -27,16 +27,19 @@ const ProfileSchema = z.object({
     .or(z.literal("")),
 });
 
-const PwSchema = z
-  .object({
-    currentPassword: z.string().min(1, "Enter your current password."),
-    newPassword: z.string().min(8, "At least 8 characters.").max(128),
-    confirmPassword: z.string().min(1, "Confirm your new password."),
-  })
-  .refine((v) => v.newPassword === v.confirmPassword, {
-    message: "Passwords don't match.",
-    path: ["confirmPassword"],
-  });
+const makePwSchema = (hasPassword: boolean) =>
+  z
+    .object({
+      currentPassword: hasPassword
+        ? z.string().min(1, "Enter your current password.")
+        : z.string().optional().default(""),
+      newPassword: z.string().min(8, "At least 8 characters.").max(128),
+      confirmPassword: z.string().min(1, "Confirm your new password."),
+    })
+    .refine((v) => v.newPassword === v.confirmPassword, {
+      message: "Passwords don't match.",
+      path: ["confirmPassword"],
+    });
 
 const OtpSchema = z.object({
   code: z.string().length(6, "Enter the 6-digit code."),
@@ -129,7 +132,8 @@ export default function AccountPage() {
   const [pwSaving, setPwSaving] = useState(false);
   const [pwError, setPwError] = useState("");
   const [pwSuccess, setPwSuccess] = useState(false);
-  const pwForm = useForm({ resolver: zodResolver(PwSchema), defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" } });
+  const hasPassword = user?.hasPassword ?? true;
+  const pwForm = useForm({ resolver: zodResolver(makePwSchema(hasPassword)), defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" } });
 
   // populate fields when user loads
   useEffect(() => {
@@ -395,13 +399,15 @@ export default function AccountPage() {
             <p className="text-sm text-foreground py-2">Password updated. Signing you out…</p>
           ) : (
             <form onSubmit={pwForm.handleSubmit(handlePasswordSave)} className="space-y-3 pt-1">
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Current password</p>
-                <Input type="password" autoComplete="current-password" {...pwForm.register("currentPassword")} />
-                {pwForm.formState.errors.currentPassword && (
-                  <p className="text-xs text-destructive">{pwForm.formState.errors.currentPassword.message}</p>
-                )}
-              </div>
+              {hasPassword && (
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Current password</p>
+                  <Input type="password" autoComplete="current-password" {...pwForm.register("currentPassword")} />
+                  {pwForm.formState.errors.currentPassword && (
+                    <p className="text-xs text-destructive">{pwForm.formState.errors.currentPassword.message}</p>
+                  )}
+                </div>
+              )}
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">New password</p>
                 <Input type="password" autoComplete="new-password" {...pwForm.register("newPassword")} />
