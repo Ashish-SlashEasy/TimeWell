@@ -406,10 +406,10 @@ export function refreshCookieOptions() {
   const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
   return {
     httpOnly: true,
-    secure: env.COOKIE_SECURE,
-    sameSite: "strict" as const,
+    secure: true,
+    sameSite: "none" as const,
     domain: env.COOKIE_DOMAIN || undefined,
     maxAge: SEVEN_DAYS_MS,
-    path: "/api/auth",
+    path: "/",
   };
 }
