@@ -138,7 +138,7 @@ function SubmitOrderDialog({
 // ── Editor top bar ────────────────────────────────────────────────────────────
 
 function EditorHeader({ onBack, card, onCardUpdate }: { onBack: () => void; card: Card | null; onCardUpdate: (card: Card) => void }) {
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const appUrl = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000");
   const shareUrl = card ? `/s/${card.shareToken}` : "#";
   const fullShareUrl = card ? `${appUrl}/s/${card.shareToken}` : "";
   const [showShare, setShowShare] = useState(false);
