@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { User, ArrowUp, ArrowLeft, Plus, X, Play, Music, Camera, Mic, Video } from "lucide-react";
+import { ArrowLeft, Plus, X, Play, Music, Camera, Mic, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -144,12 +144,6 @@ function ShareHeader({ onPickKind, onCapture }: {
           <span className="font-serif text-xl sm:text-[26px] font-normal text-foreground tracking-wide">Timewell</span>
         </div>
         <div className="shrink-0 ml-auto flex items-center gap-1.5 sm:gap-2">
-          <button className="h-8 w-8 sm:h-9 sm:w-9 flex items-center justify-center rounded-full border border-border bg-background text-foreground/70 hover:bg-muted transition-colors">
-            <User className="w-4 h-4" />
-          </button>
-          <button className="h-8 w-8 sm:h-9 sm:w-9 flex items-center justify-center rounded-md border border-border bg-background text-foreground/70 hover:bg-muted transition-colors">
-            <ArrowUp className="w-4 h-4" />
-          </button>
           {onPickKind && (
             <>
             <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelected} />
