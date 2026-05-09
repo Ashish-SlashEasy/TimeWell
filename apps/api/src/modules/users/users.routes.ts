@@ -14,6 +14,13 @@ import {
 
 export const usersRouter: Router = Router();
 
+// Token-based — no session required; the token itself proves identity
+usersRouter.post(
+  "/me/confirm-email-change",
+  validate(z.object({ token: z.string().min(1) })),
+  confirmEmailChangeController,
+);
+
 usersRouter.use(requireAuth);
 
 usersRouter.get("/me", getMeController);
@@ -23,11 +30,6 @@ usersRouter.post(
   "/me/change-password",
   validate(ChangePasswordSchema),
   changePasswordController,
-);
-usersRouter.post(
-  "/me/confirm-email-change",
-  validate(z.object({ token: z.string().min(1) })),
-  confirmEmailChangeController,
 );
 usersRouter.post(
   "/me/confirm-phone-change",
