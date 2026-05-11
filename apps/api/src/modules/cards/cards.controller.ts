@@ -49,7 +49,7 @@ export const cardsController = {
 
   async downloadQr(req: Request, res: Response) {
     const card = await cardsService.getById(req.params.id, uid(req));
-    const url = `${env.WEB_APP_URL}/s/${card.shareToken}`;
+    const url = `${env.WEB_APP_URL}/message/${card.shareToken}`;
     const png = await generateQrWithLogo(url);
     res.setHeader("Content-Type", "image/png");
     res.setHeader("Content-Disposition", `attachment; filename="qr-${card.shareToken}.png"`);
@@ -59,7 +59,7 @@ export const cardsController = {
 
   async publicQr(req: Request, res: Response) {
     const card = await cardsService.getByShareToken(req.params.token);
-    const url = `${env.WEB_APP_URL}/s/${card.shareToken}`;
+    const url = `${env.WEB_APP_URL}/message/${card.shareToken}`;
     const png = await generateQrWithLogo(url);
     res.setHeader("Content-Type", "image/png");
     res.setHeader("Cache-Control", "no-cache");

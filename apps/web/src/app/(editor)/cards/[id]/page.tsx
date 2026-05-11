@@ -139,8 +139,8 @@ function SubmitOrderDialog({
 
 function EditorHeader({ onBack, card, onCardUpdate }: { onBack: () => void; card: Card | null; onCardUpdate: (card: Card) => void }) {
   const appUrl = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000");
-  const shareUrl = card ? `/s/${card.shareToken}` : "#";
-  const fullShareUrl = card ? `${appUrl}/s/${card.shareToken}` : "";
+  const shareUrl = card ? `/message/${card.shareToken}` : "#";
+  const fullShareUrl = card ? `${appUrl}/message/${card.shareToken}` : "";
   const [showShare, setShowShare] = useState(false);
   const [showOrderDialog, setShowOrderDialog] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -881,24 +881,24 @@ export default function CardDetailPage({ params }: Props) {
 
                   {/* Title — floating label field */}
                   <div className="bg-muted/50 rounded-lg px-4 pt-2.5 pb-3">
-                    <p className="text-xs text-muted-foreground mb-1">Title ({title.length}/64)</p>
+                    <p className="text-xs text-muted-foreground mb-1">Title ({title.length}/40)</p>
                     <input
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="Happy Birthday!"
-                      maxLength={64}
+                      maxLength={40}
                       className="w-full bg-transparent border-0 outline-none text-base text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
                     />
                   </div>
 
                   {/* Message — floating label textarea, green border on focus */}
                   <div className="bg-muted/50 rounded-lg px-4 pt-2.5 pb-3 border border-transparent focus-within:border-primary transition-colors">
-                    <p className="text-xs text-muted-foreground mb-2">Message</p>
+                    <p className="text-xs text-muted-foreground mb-2">Message ({cardMessage.length}/80)</p>
                     <textarea
                       value={cardMessage}
                       onChange={(e) => setCardMessage(e.target.value)}
                       placeholder="We love you, Grandpa"
-                      maxLength={200}
+                      maxLength={80}
                       rows={5}
                       className="w-full bg-transparent border-0 outline-none text-base text-foreground placeholder:text-muted-foreground/40 resize-none focus:outline-none"
                     />
@@ -916,7 +916,7 @@ export default function CardDetailPage({ params }: Props) {
                       Manage who can view and contribute content on the Message Page
                     </p>
                     <a
-                      href={`/s/${card.shareToken}`}
+                      href={`/message/${card.shareToken}`}
                       target="_blank"
                       rel="noreferrer"
                       className="text-sm text-foreground underline inline-block mt-1"

@@ -35,3 +35,10 @@ contributionsRouter.patch(
   validate(ModerateSchema),
   asyncHandler(contributionsController.moderate),
 );
+
+// Delete — owner only (removes DB record + Cloudinary file)
+contributionsRouter.delete(
+  "/:contributionId",
+  requireAuth,
+  asyncHandler(contributionsController.delete),
+);

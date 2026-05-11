@@ -9,6 +9,7 @@ import { hashPassword, comparePassword } from "../../utils/password";
 import { uploadBuffer, deleteFile } from "../../utils/storage";
 import { generateQrWithLogo, composeCardImage } from "../../utils/qr";
 import { env } from "../../config/env";
+import { containsProfanity } from "../../utils/profanity";
 
 const EDITABLE_STATUSES: CardDoc["status"][] = ["draft", "in_progress"];
 
@@ -55,6 +56,14 @@ export class CardsService {
     const card = await this.getById(cardId, ownerId);
     if (!EDITABLE_STATUSES.includes(card.status)) {
       throw new AppError({ code: "CARD_NOT_EDITABLE", statusCode: 422 });
+    }
+
+    if (containsProfanity(input.title, input.message)) {
+      throw new AppError({
+        code: "PROFANITY_DETECTED",
+        statusCode: 422,
+        message: "Your title or message contains inappropriate language. Please revise and try again.",
+      });
     }
 
     if (input.title !== undefined) card.title = input.title;
@@ -139,7 +148,7 @@ export class CardsService {
     const orientation: "landscape" | "portrait" =
       (meta.width ?? 0) >= (meta.height ?? 0) ? "landscape" : "portrait";
 
-    const shareUrl = `${env.WEB_APP_URL}/s/${card.shareToken}`;
+    const shareUrl = `${env.WEB_APP_URL}/message/${card.shareToken}`;
     const originalBuf = await sharp(fileBuffer)
       .resize({ width: 2000, withoutEnlargement: true })
       .jpeg({ quality: 85 })
@@ -292,7 +301,7 @@ export class CardsService {
       submittedAt: new Date(),
     });
 
-    const shareUrl = `${env.WEB_APP_URL}/s/${card.shareToken}`;
+    const shareUrl = `${env.WEB_APP_URL}/message/${card.shareToken}`;
     const qrBuffer = await generateQrWithLogo(shareUrl);
     const qrUrl = await uploadBuffer(`cards/${card._id}/qr.png`, qrBuffer, "image/png");
 
@@ -310,7 +319,7 @@ export class CardsService {
   async ensurePrintBundle(card: CardDoc): Promise<CardDoc> {
     if (card.status !== "ordered" || card.printBundle?.qrPngKey) return card;
 
-    const shareUrl = `${env.WEB_APP_URL}/s/${card.shareToken}`;
+    const shareUrl = `${env.WEB_APP_URL}/message/${card.shareToken}`;
     const qrBuffer = await generateQrWithLogo(shareUrl);
     const qrUrl = await uploadBuffer(`cards/${card._id}/qr.png`, qrBuffer, "image/png");
 

@@ -2,7 +2,7 @@ import sharp from "sharp";
 import { Types } from "mongoose";
 import { Card, Contribution, ContributionDoc } from "../../models";
 import { AppError } from "../../utils/AppError";
-import { uploadBuffer } from "../../utils/storage";
+import { uploadBuffer, deleteFile } from "../../utils/storage";
 
 type MediaType = "photo" | "video" | "audio";
 
@@ -90,6 +90,15 @@ export class ContributionsService {
     contribution.status = action === "approve" ? "public" : action === "reject" ? "rejected" : "removed";
     await contribution.save();
     return contribution;
+  }
+
+  async delete(contributionId: string, ownerId: string): Promise<void> {
+    const contribution = await Contribution.findById(contributionId);
+    if (!contribution) throw AppError.notFound();
+    const card = await Card.findOne({ _id: contribution.cardId, ownerId: new Types.ObjectId(ownerId) });
+    if (!card) throw new AppError({ code: "FORBIDDEN", statusCode: 403 });
+    await deleteFile(contribution.mediaKey);
+    await contribution.deleteOne();
   }
 
   toPublic(c: ContributionDoc) {

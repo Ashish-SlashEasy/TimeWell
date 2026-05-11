@@ -1,5 +1,6 @@
 import { ErrorRequestHandler, NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
+import multer from "multer";
 import { ErrorMessages } from "@timewell/shared";
 import { AppError } from "../utils/AppError";
 import { logger } from "../config/logger";
@@ -42,6 +43,15 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
         requestId,
       },
     });
+    return;
+  }
+
+  if (err instanceof multer.MulterError) {
+    const message =
+      err.code === "LIMIT_FILE_SIZE"
+        ? "File is too large. Maximum allowed size is 200 MB for video/audio and 15 MB for images."
+        : "File upload error.";
+    res.status(413).json({ error: { code: "FILE_TOO_LARGE", message, requestId } });
     return;
   }
 

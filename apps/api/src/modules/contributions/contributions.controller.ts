@@ -39,4 +39,9 @@ export const contributionsController = {
     );
     res.json({ data: contributionsService.toPublic(contribution) });
   },
+
+  async delete(req: Request, res: Response) {
+    await contributionsService.delete(req.params.contributionId, uid(req));
+    res.status(204).end();
+  },
 };
