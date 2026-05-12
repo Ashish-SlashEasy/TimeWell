@@ -23,7 +23,7 @@ export interface CardDoc extends Document {
   _id: Types.ObjectId;
   ownerId: Types.ObjectId;
   shareToken: string;
-  status: "draft" | "in_progress" | "ordered" | "archived" | "deleted";
+  status: "draft" | "in_progress" | "ordered" | "cancelled" | "archived" | "deleted";
   coverImage: CoverImage;
   orientation: "landscape" | "portrait";
   title: string | null;
@@ -41,7 +41,7 @@ const CardSchema = new Schema<CardDoc>(
     shareToken: { type: String, required: true, unique: true, index: true },
     status: {
       type: String,
-      enum: ["draft", "in_progress", "ordered", "archived", "deleted"],
+      enum: ["draft", "in_progress", "ordered", "cancelled", "archived", "deleted"],
       default: "draft",
       index: true,
     },

@@ -226,6 +226,7 @@ export const adminService = {
 
     if (to === "cancelled") {
       await User.findByIdAndUpdate(order.ownerId, { $inc: { usedCards: -1 } });
+      await Card.findByIdAndUpdate(order.cardId, { status: "cancelled" });
     }
 
     try {

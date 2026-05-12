@@ -165,6 +165,22 @@ function OrderedCell({ card, onReview }: { card: Card; onReview: () => void }) {
   );
 }
 
+function CancelledCard({ card }: { card: Card }) {
+  return (
+    <div className="flex items-center md:items-start gap-4 sm:gap-6 bg-muted/40 rounded-2xl px-4 sm:px-6 py-[22px] md:py-4 opacity-60">
+      <CardThumb card={card} />
+      <div className="flex-1 min-w-0 flex flex-col justify-between h-[143px] md:h-[110px] py-1">
+        <div className="space-y-1">
+          <p className="font-serif text-[22px] font-bold leading-snug text-foreground">
+            {card.title ?? "Untitled card"}
+          </p>
+          <p className="text-sm text-destructive">Order cancelled</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function QuestionsBlock({ onAsk }: { onAsk: () => void }) {
   return (
     <div className="bg-muted/40 rounded-2xl px-5 sm:px-8 py-8 sm:py-10 text-center space-y-4">
@@ -211,6 +227,7 @@ export default function DashboardPage() {
     (c) => (c.status === "draft" || c.status === "in_progress") && c.coverImage?.original,
   );
   const ordered = allCards.filter((c) => c.status === "ordered");
+  const cancelled = allCards.filter((c) => c.status === "cancelled");
   const orderedVisible = ordered.slice(0, orderedPage * PAGE_SIZE);
   const hasMore = ordered.length > orderedVisible.length;
   const quotaExhausted = quota ? quota.remaining <= 0 : false;
@@ -258,7 +275,7 @@ export default function DashboardPage() {
     }
   }
 
-  const isEmpty = inProgress.length === 0 && ordered.length === 0;
+  const isEmpty = inProgress.length === 0 && ordered.length === 0 && cancelled.length === 0;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -409,6 +426,19 @@ export default function DashboardPage() {
                     </span>
                   </div>
                 )}
+              </section>
+            )}
+
+            {cancelled.length > 0 && (
+              <section className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Cancelled</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {cancelled.map((card) => (
+                    <CardContextTrigger key={card.id} cardId={card.id} onMenu={openMenu}>
+                      <CancelledCard card={card} />
+                    </CardContextTrigger>
+                  ))}
+                </div>
               </section>
             )}
           </main>

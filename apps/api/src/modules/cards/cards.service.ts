@@ -92,11 +92,10 @@ export class CardsService {
 
   async remove(cardId: string, ownerId: string): Promise<void> {
     const card = await this.getById(cardId, ownerId);
-    const wasArchived = card.status === "archived";
+    const quotaAlreadyRestored = card.status === "archived" || card.status === "cancelled";
     card.status = "deleted";
     await card.save();
-    // Only decrement quota if not already archived (archived already decremented)
-    if (!wasArchived) {
+    if (!quotaAlreadyRestored) {
       await User.updateOne({ _id: ownerId }, { $inc: { usedCards: -1 } });
     }
   }
@@ -106,9 +105,12 @@ export class CardsService {
     if (card.status === "archived") {
       throw new AppError({ code: "CARD_ALREADY_ARCHIVED", statusCode: 422 });
     }
+    const quotaAlreadyRestored = card.status === "cancelled";
     card.status = "archived";
     await card.save();
-    await User.updateOne({ _id: ownerId }, { $inc: { usedCards: -1 } });
+    if (!quotaAlreadyRestored) {
+      await User.updateOne({ _id: ownerId }, { $inc: { usedCards: -1 } });
+    }
     return card;
   }
 

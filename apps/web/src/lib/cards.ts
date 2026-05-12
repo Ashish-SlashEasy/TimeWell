@@ -21,7 +21,7 @@ export interface ShippingAddress {
 export interface Card {
   id: string;
   shareToken: string;
-  status: "draft" | "in_progress" | "ordered" | "archived" | "deleted";
+  status: "draft" | "in_progress" | "ordered" | "cancelled" | "archived" | "deleted";
   title: string | null;
   message: string | null;
   orientation: "landscape" | "portrait";
