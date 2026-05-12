@@ -126,9 +126,9 @@ function CardThumb({ card }: { card: Card }) {
 
 function InProgressCard({ card, onEdit }: { card: Card; onEdit: () => void }) {
   return (
-    <div className="flex items-start gap-4 sm:gap-6 bg-muted/40 rounded-2xl px-4 sm:px-6 py-4">
+    <div className="flex items-center md:items-start gap-4 sm:gap-6 bg-muted/40 rounded-2xl px-4 sm:px-6 py-[22px] md:py-4">
       <CardThumb card={card} />
-      <div className="flex-1 min-w-0 flex flex-col justify-between h-[110px] py-1">
+      <div className="flex-1 min-w-0 flex flex-col justify-between h-[143px] md:h-[110px] py-1">
         <div className="space-y-1">
           <p className="font-serif text-[22px] font-bold leading-snug text-foreground">
             {card.title ?? "Untitled card"}
@@ -148,9 +148,9 @@ function OrderedCell({ card, onReview }: { card: Card; onReview: () => void }) {
     month: "short", day: "numeric", year: "numeric",
   });
   return (
-    <div className="flex items-start gap-4 sm:gap-6 bg-muted/40 rounded-2xl px-4 sm:px-6 py-4">
+    <div className="flex items-center md:items-start gap-4 sm:gap-6 bg-muted/40 rounded-2xl px-4 sm:px-6 py-[22px] md:py-4">
       <CardThumb card={card} />
-      <div className="flex-1 min-w-0 flex flex-col justify-between h-[110px] py-1">
+      <div className="flex-1 min-w-0 flex flex-col justify-between h-[143px] md:h-[110px] py-1">
         <div className="space-y-1">
           <p className="font-serif text-[22px] font-bold leading-snug text-foreground">
             {card.title ?? "Untitled card"}
@@ -289,15 +289,32 @@ export default function DashboardPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Page header — always visible ── */}
-      <div className="w-full px-4 sm:px-8 pt-6 sm:pt-8 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="font-serif text-3xl sm:text-5xl font-normal text-foreground">Home</h1>
-        <div className="flex items-center gap-3 sm:gap-4">
+      {/* ── Mobile-only Timewell brand bar ── */}
+      <header className="md:hidden h-12 flex items-center justify-center border-b border-border bg-background shrink-0">
+        <span className="font-serif text-[22px] font-normal text-foreground tracking-wide">Timewell</span>
+      </header>
+
+      {/* ── Page header ── */}
+      <div className="w-full px-4 sm:px-8 pt-4 md:pt-8 pb-4 md:flex md:flex-row md:items-center md:justify-between md:gap-3">
+        {/* Title — always visible; New button shown inline on mobile only */}
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="font-serif text-3xl sm:text-5xl font-normal text-foreground">Home</h1>
+          <Button
+            disabled={quotaExhausted}
+            title={quotaExhausted ? "No cards available. Buy more?" : undefined}
+            onClick={() => router.push("/cards/new")}
+            className="md:hidden gap-2 px-5 h-9 text-sm font-medium shrink-0"
+          >
+            <span className="text-base leading-none">+</span> New
+          </Button>
+        </div>
+        {/* Quota bar + New button (desktop: same row as title; mobile: below title) */}
+        <div className="mt-3 md:mt-0 flex items-center gap-3 sm:gap-4">
           {isLoading ? (
-            <div className="flex-1 sm:w-52 h-7 bg-muted rounded animate-pulse" />
+            <div className="flex-1 md:w-52 h-7 bg-muted rounded animate-pulse" />
           ) : quota ? (
-            <div className="flex flex-col gap-1 items-start flex-1 sm:flex-none">
-              <div className="w-full sm:w-52 h-[7px] rounded-full bg-[#E0E0D6] overflow-hidden">
+            <div className="flex flex-col gap-1 items-start flex-1 md:flex-none">
+              <div className="w-full md:w-52 h-[7px] rounded-full bg-[#E0E0D6] overflow-hidden">
                 <div
                   className="h-full bg-primary rounded-full transition-all"
                   style={{ width: `${Math.min(100, (quota.used / quota.total) * 100)}%` }}
@@ -312,7 +329,7 @@ export default function DashboardPage() {
             disabled={quotaExhausted}
             title={quotaExhausted ? "No cards available. Buy more?" : undefined}
             onClick={() => router.push("/cards/new")}
-            className="gap-2 px-5 h-10 text-sm font-medium shrink-0"
+            className="hidden md:inline-flex gap-2 px-5 h-10 text-sm font-medium shrink-0"
           >
             <span className="text-base leading-none">+</span> New
           </Button>

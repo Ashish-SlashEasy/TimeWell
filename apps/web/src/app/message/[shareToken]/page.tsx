@@ -884,7 +884,8 @@ function AddContentModal({ token, onDone, onClose, initialKind = "photo", initia
 
     if (kind === "video" || kind === "audio") {
       checkMediaDuration(f, kind).then((duration) => {
-        if (duration > MAX_DURATION_S[kind]) {
+        // Infinity/NaN = MediaRecorder blob with no duration header; timer already enforced the limit
+        if (isFinite(duration) && duration > MAX_DURATION_S[kind]) {
           setError(`${kind === "video" ? "Video" : "Audio"} must be ${DURATION_LABEL[kind]} or less.`);
           setFile(null);
           setPreview("");
@@ -902,7 +903,7 @@ function AddContentModal({ token, onDone, onClose, initialKind = "photo", initia
     }
     if (kind === "video" || kind === "audio") {
       const duration = await checkMediaDuration(file, kind);
-      if (duration > MAX_DURATION_S[kind]) {
+      if (isFinite(duration) && duration > MAX_DURATION_S[kind]) {
         setError(`${kind === "video" ? "Video" : "Audio"} must be ${DURATION_LABEL[kind]} or less.`);
         return;
       }

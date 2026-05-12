@@ -81,7 +81,7 @@ async function generatePrintFile(order: OrderDoc): Promise<string> {
   order.printFileKey = url;
   await order.save();
 
-  card.printBundle = { ...card.printBundle, jpgKey: url, generatedAt: new Date() };
+  card.printBundle = { ...card.printBundle, jpgKey: card.coverImage.web ?? card.coverImage.original ?? null, generatedAt: new Date() };
   await card.save();
 
   return url;
@@ -120,6 +120,8 @@ export const adminService = {
 
       if (Types.ObjectId.isValid(s)) {
         orConditions.push({ _id: new Types.ObjectId(s) });
+      } else if (/^[0-9a-fA-F]+$/.test(s)) {
+        orConditions.push({ $expr: { $regexMatch: { input: { $toString: "$_id" }, regex: s, options: "i" } } });
       }
 
       const [matchUsers, matchCards] = await Promise.all([

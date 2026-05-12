@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ArrowUp, Trash2, Copy, Check, PackageCheck } from "lucide-react";
+import { ArrowUp, Eye, Trash2, Copy, Check, PackageCheck, X } from "lucide-react";
 import { cardsApi, type Card, type ShippingAddress } from "@/lib/cards";
 import { getFriendlyMessage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -137,7 +137,7 @@ function SubmitOrderDialog({
 
 // ── Editor top bar ────────────────────────────────────────────────────────────
 
-function EditorHeader({ onBack, card, onCardUpdate }: { onBack: () => void; card: Card | null; onCardUpdate: (card: Card) => void }) {
+function EditorHeader({ onBack, card, onCardUpdate, onPreview }: { onBack: () => void; card: Card | null; onCardUpdate: (card: Card) => void; onPreview?: () => void }) {
   const appUrl = typeof window !== "undefined" ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000");
   const shareUrl = card ? `/message/${card.shareToken}` : "#";
   const fullShareUrl = card ? `${appUrl}/message/${card.shareToken}` : "";
@@ -179,25 +179,26 @@ function EditorHeader({ onBack, card, onCardUpdate }: { onBack: () => void; card
     <>
       <header className="border-b bg-card sticky top-0 z-10">
         <div className="h-14 relative flex items-center px-4 sm:px-6">
-          {/* ← Back / Card */}
+          {/* Back — icon-only on mobile, full label on desktop */}
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={onBack}
-              className="text-sm text-foreground/70 hover:text-foreground transition-colors"
+              className="flex items-center gap-1 text-sm text-foreground/70 hover:text-foreground transition-colors"
             >
-              ← Back
+              <span>←</span>
+              <span className="hidden sm:inline">Back</span>
             </button>
-            <span className="text-foreground/30 text-sm">/</span>
-            <span className="text-sm text-foreground/70">Card</span>
+            <span className="hidden sm:inline text-foreground/30 text-sm">/</span>
+            <span className="hidden sm:inline text-sm text-foreground/70">Card</span>
           </div>
 
-          {/* Timewell — absolutely centered to the full header width */}
+          {/* Timewell — absolutely centered */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span className="font-serif text-2xl font-normal text-foreground tracking-wide">Timewell</span>
+            <span className="font-serif text-xl sm:text-2xl font-normal text-foreground tracking-wide">Timewell</span>
           </div>
 
           {/* Right actions */}
-          <div className="flex items-center gap-2 shrink-0 ml-auto">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
             {card && (
               <a
                 href={shareUrl}
@@ -219,7 +220,15 @@ function EditorHeader({ onBack, card, onCardUpdate }: { onBack: () => void; card
               </button>
 
               {showShare && card && (
-                <div className="absolute right-0 top-[calc(100%+10px)] w-[342px] bg-card border border-border rounded-xl shadow-xl p-5 z-50 space-y-4">
+                <>
+                  {/* Mobile backdrop */}
+                  <div className="fixed inset-0 z-40 md:hidden" onClick={() => setShowShare(false)} />
+
+                  <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl md:absolute md:bottom-auto md:left-auto md:right-0 md:top-[calc(100%+10px)] md:w-[342px] md:rounded-xl bg-card border border-border shadow-xl p-5 space-y-4">
+                    {/* Drag handle — mobile only */}
+                    <div className="flex justify-center -mt-1 mb-1 md:hidden">
+                      <div className="w-10 h-1 rounded-full bg-border" />
+                    </div>
                   <div className="space-y-2">
                     <h3 className="font-serif text-[26px] font-normal text-foreground leading-tight">Share this Card</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">
@@ -255,9 +264,9 @@ function EditorHeader({ onBack, card, onCardUpdate }: { onBack: () => void; card
                         Submit order for print
                       </Button>
                     )}
-                    {card.printBundle?.jpgKey && (
+                    {card.coverImage?.web && (
                       <a
-                        href={card.printBundle.jpgKey}
+                        href={card.coverImage.web}
                         download={`card-${card.shareToken}.jpg`}
                         className="w-full h-11 flex items-center justify-center rounded-md border border-input bg-background text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
                       >
@@ -296,7 +305,8 @@ function EditorHeader({ onBack, card, onCardUpdate }: { onBack: () => void; card
                       </Button>
                     )}
                   </div>
-                </div>
+                  </div>
+                </>
               )}
             </div>
 
@@ -563,14 +573,30 @@ function CardPreview({
 
   const cardCn = cn(
     "bg-white rounded-2xl shadow-sm border-2 border-gray-300 mx-auto w-full overflow-hidden",
-    isPortrait ? "max-w-[320px]" : "max-w-[600px]"
+    isPortrait ? "max-w-[408px]" : "max-w-[600px]"
   );
   const cardRatio = isPortrait ? "3/4" : "4/3";
 
   if (side === "front") {
+    if (isPortrait) {
+      // White card: 3/4 aspect ratio (height:width = 4:3).
+      // Inner image: same 3/4 ratio, 10% smaller in each dimension.
+      // inset 4.55% = (1 - 1/1.1) / 2 on all sides; because top/bottom % resolve
+      // against height and left/right against width, the inner box stays 3/4.
+      return (
+        <div
+          className="bg-white rounded-2xl shadow-sm border-2 border-gray-300 mx-auto w-full max-w-[408px] relative"
+          style={{ aspectRatio: "3/4" }}
+        >
+          <div className="absolute overflow-hidden rounded-xl" style={{ inset: "4.55%" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={coverUrl} alt="Card cover" className="w-full h-full object-cover block" />
+          </div>
+        </div>
+      );
+    }
     return (
       <div className={cardCn} style={{ aspectRatio: cardRatio }}>
-        {/* web image already has white mat + QR baked in — display it directly */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={coverUrl} alt="Card cover" className="w-full h-full object-cover block" />
       </div>
@@ -620,6 +646,8 @@ export default function CardDetailPage({ params }: Props) {
   // UI state
   const [tab, setTab] = useState<Tab>("image");
   const [side, setSide] = useState<Side>("front");
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
+  const [previewSide, setPreviewSide] = useState<Side>("front");
 
   // Image tab
   const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
@@ -757,7 +785,7 @@ export default function CardDetailPage({ params }: Props) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <EditorHeader onBack={() => router.push("/dashboard")} card={card} onCardUpdate={handleCardUpdate} />
+      <EditorHeader onBack={() => router.push("/dashboard")} card={card} onCardUpdate={handleCardUpdate} onPreview={() => { setPreviewSide("front"); setShowMobilePreview(true); }} />
 
       {!hasCover ? (
         <UploadPanel cardId={id} onUploaded={handleCoverUpdated} />
@@ -805,7 +833,16 @@ export default function CardDetailPage({ params }: Props) {
                 <>
                   {/* Heading — large serif, regular weight */}
                   <div className="space-y-1">
-                    <p className="font-serif text-4xl font-normal text-foreground leading-tight">Cover Image</p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-serif text-4xl font-normal text-foreground leading-tight">Cover Image</p>
+                      <button
+                        onClick={() => { setPreviewSide("front"); setShowMobilePreview(true); }}
+                        className="md:hidden flex items-center gap-1.5 text-sm text-foreground/70 hover:text-foreground border border-border rounded-md px-3 h-8 transition-colors bg-background shrink-0"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        Preview
+                      </button>
+                    </div>
                     <p className="text-sm text-foreground/80">Adjust orientation and cropping.</p>
                   </div>
 
@@ -873,7 +910,16 @@ export default function CardDetailPage({ params }: Props) {
                 <>
                   {/* Heading — same serif style as Cover Image */}
                   <div className="space-y-1">
-                    <p className="font-serif text-4xl font-normal text-foreground leading-tight">Text</p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-serif text-4xl font-normal text-foreground leading-tight">Text</p>
+                      <button
+                        onClick={() => { setPreviewSide("back"); setShowMobilePreview(true); }}
+                        className="md:hidden flex items-center gap-1.5 text-sm text-foreground/70 hover:text-foreground border border-border rounded-md px-3 h-8 transition-colors bg-background shrink-0"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        Preview
+                      </button>
+                    </div>
                     <p className="text-sm text-foreground/80 leading-relaxed">
                       Add a brief message that will be on the back of the card and Message Page, or you can choose to leave this blank.
                     </p>
@@ -911,7 +957,16 @@ export default function CardDetailPage({ params }: Props) {
                 <div className="space-y-6">
                   {/* Heading */}
                   <div className="space-y-1.5">
-                    <p className="font-serif text-3xl font-normal text-foreground leading-tight">Settings</p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-serif text-3xl font-normal text-foreground leading-tight">Settings</p>
+                      <button
+                        onClick={() => { setPreviewSide("front"); setShowMobilePreview(true); }}
+                        className="md:hidden flex items-center gap-1.5 text-sm text-foreground/70 hover:text-foreground border border-border rounded-md px-3 h-8 transition-colors bg-background shrink-0"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        Preview
+                      </button>
+                    </div>
                     <p className="text-sm text-foreground/80 leading-relaxed">
                       Manage who can view and contribute content on the Message Page
                     </p>
@@ -975,9 +1030,9 @@ export default function CardDetailPage({ params }: Props) {
           </div>
 
           {/* ── Right panel: preview — hidden on mobile ── */}
-          <div className="hidden md:flex flex-1 flex-col items-center bg-muted/20 overflow-auto">
+          <div className="hidden md:flex flex-1 flex-col items-center bg-muted/20 overflow-hidden">
             {/* Front / Back toggle */}
-            <div className="pt-6 pb-4">
+            <div className={cn(orientation === "portrait" ? "pt-3 pb-3" : "pt-6 pb-4")}>
               <div className="flex items-center border border-border rounded-md overflow-hidden text-xs">
                 {(["front", "back"] as const).map((s, i) => (
                   <button
@@ -996,8 +1051,48 @@ export default function CardDetailPage({ params }: Props) {
                 ))}
               </div>
             </div>
-            <div className="flex-1 flex items-start justify-center px-8 pb-8 w-full">
+            <div className={cn("flex-1 flex justify-center px-8 pb-8 w-full", orientation === "portrait" ? "items-start" : "items-center")}>
               <CardPreview card={card} side={side} title={title} message={cardMessage} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Mobile card preview bottom sheet ── */}
+      {showMobilePreview && card && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex flex-col justify-end sm:hidden"
+          onClick={() => setShowMobilePreview(false)}
+        >
+          <div
+            className="bg-background rounded-t-2xl overflow-y-auto max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b">
+              <span className="font-serif text-xl font-normal text-foreground">Card Preview</span>
+              <button onClick={() => setShowMobilePreview(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex justify-center pt-4 pb-2">
+              <div className="flex items-center border border-border rounded-md overflow-hidden text-xs">
+                {(["front", "back"] as const).map((s, i) => (
+                  <button
+                    key={s}
+                    onClick={() => setPreviewSide(s)}
+                    className={cn(
+                      "px-5 py-1.5 capitalize transition-colors",
+                      i > 0 && "border-l border-border",
+                      previewSide === s ? "bg-foreground text-background" : "hover:bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="px-6 pb-8 pt-3 flex justify-center">
+              <CardPreview card={card} side={previewSide} title={title} message={cardMessage} />
             </div>
           </div>
         </div>

@@ -293,17 +293,22 @@ export class CardsService {
       throw new AppError({ code: "VALIDATION_ERROR", statusCode: 422, message: "Add a cover image before submitting an order." });
     }
 
-    await Order.create({
+    const order = await Order.create({
       cardId: card._id,
       ownerId: new Types.ObjectId(ownerId),
       status: "new",
       shippingAddress,
       submittedAt: new Date(),
+      printFileKey: card.coverImage.web ?? card.coverImage.original ?? null,
+      qrPngKey: null,
     });
 
     const shareUrl = `${env.WEB_APP_URL}/message/${card.shareToken}`;
     const qrBuffer = await generateQrWithLogo(shareUrl);
     const qrUrl = await uploadBuffer(`cards/${card._id}/qr.png`, qrBuffer, "image/png");
+
+    order.qrPngKey = qrUrl;
+    await order.save();
 
     card.status = "ordered";
     card.orderedAt = new Date();
