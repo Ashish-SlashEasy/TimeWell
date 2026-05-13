@@ -299,8 +299,8 @@ export default function AdminOrderDetailPage() {
   const addr = order.shippingAddress;
 
   return (
-    <div className="p-6 max-w-7xl space-y-6">
-      {/* Breadcrumb + header */}
+    <div className="p-4 sm:p-6 max-w-7xl space-y-5 sm:space-y-6">
+      {/* Breadcrumb */}
       <div className="flex items-center gap-3">
         <Link href="/admin/orders">
           <Button variant="ghost" size="sm" className="gap-1.5 -ml-2">
@@ -310,9 +310,9 @@ export default function AdminOrderDetailPage() {
         </Link>
       </div>
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-xl font-semibold text-foreground font-mono tracking-wide">
               #{order._id.slice(-10).toUpperCase()}
             </h1>
@@ -324,10 +324,11 @@ export default function AdminOrderDetailPage() {
         </div>
 
         {/* Action buttons */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full sm:w-auto">
           {nextStatus && nextStatus !== "shipped" && (
             <Button
               size="sm"
+              className="w-full sm:w-auto"
               onClick={() => forwardMutation.mutate(nextStatus)}
               disabled={forwardMutation.isPending}
             >
@@ -335,7 +336,7 @@ export default function AdminOrderDetailPage() {
             </Button>
           )}
           {nextStatus === "shipped" && (
-            <Button size="sm" onClick={() => setShowShipDialog(true)}>
+            <Button size="sm" className="w-full sm:w-auto" onClick={() => setShowShipDialog(true)}>
               <Truck className="w-4 h-4 mr-1.5" />
               Mark Shipped
             </Button>
@@ -344,6 +345,7 @@ export default function AdminOrderDetailPage() {
             <Button
               size="sm"
               variant="destructive"
+              className="w-full sm:w-auto"
               onClick={() => setReasonDialog({ toStatus: "cancelled", label: "Cancel Order" })}
             >
               <X className="w-4 h-4 mr-1.5" />

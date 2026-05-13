@@ -54,7 +54,6 @@ export default function AdminOrdersPage() {
       adminApi.listOrders({ status: filter === "all" ? undefined : filter, search: search || undefined, page }),
   });
 
-  // Debounce search input
   useEffect(() => {
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
@@ -64,7 +63,6 @@ export default function AdminOrdersPage() {
     return () => clearTimeout(debounceRef.current);
   }, [searchInput]);
 
-  // SSE real-time updates
   useEffect(() => {
     const token = getAccessToken();
     if (!token) return;
@@ -86,11 +84,14 @@ export default function AdminOrdersPage() {
   }
 
   return (
-    <div className="p-6 max-w-7xl">
+    <div className="p-4 sm:p-6 max-w-7xl">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-foreground">Orders</h1>
-        <div className="relative w-72">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold text-foreground">Orders</h1>
+          {isFetching && <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />}
+        </div>
+        <div className="relative sm:ml-auto w-full sm:w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             className="pl-9"
@@ -116,13 +117,10 @@ export default function AdminOrdersPage() {
             {STATUS_LABELS[s]}
           </button>
         ))}
-        {isFetching && (
-          <RefreshCw className="ml-auto self-center w-4 h-4 animate-spin text-muted-foreground" />
-        )}
       </div>
 
-      {/* Table */}
-      <div className="rounded-lg border bg-card overflow-x-auto">
+      {/* ── Desktop table ── */}
+      <div className="hidden sm:block rounded-lg border bg-card overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="border-b bg-muted/40">
             <tr>
@@ -149,10 +147,7 @@ export default function AdminOrdersPage() {
               </tr>
             ) : (
               data.orders.map((order) => (
-                <tr
-                  key={order._id}
-                  className="border-b last:border-0 hover:bg-muted/20 transition-colors"
-                >
+                <tr key={order._id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
                   <td className="px-4 py-3 font-mono text-xs text-muted-foreground tracking-wide">
                     …{order._id.slice(-8).toUpperCase()}
                   </td>
@@ -160,24 +155,18 @@ export default function AdminOrdersPage() {
                     <div className="font-medium text-foreground">{ownerName(order.ownerId)}</div>
                     <div className="text-xs text-muted-foreground">{order.ownerId.email}</div>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {order.cardId.title ?? "Untitled"}
-                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">{order.cardId.title ?? "Untitled"}</td>
                   <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                     {fmtDate(order.submittedAt ?? order.createdAt)}
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_PILL[order.status]}`}
-                    >
+                    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_PILL[order.status]}`}>
                       {STATUS_LABELS[order.status]}
                     </span>
                   </td>
                   <td className="px-4 py-3">
                     <Link href={`/admin/orders/${order._id}`}>
-                      <Button size="sm" variant="outline">
-                        View
-                      </Button>
+                      <Button size="sm" variant="outline">View</Button>
                     </Link>
                   </td>
                 </tr>
@@ -187,28 +176,52 @@ export default function AdminOrdersPage() {
         </table>
       </div>
 
+      {/* ── Mobile card list ── */}
+      <div className="sm:hidden space-y-3">
+        {isLoading ? (
+          <div className="py-12 text-center text-muted-foreground text-sm">Loading orders…</div>
+        ) : !data?.orders.length ? (
+          <div className="py-12 text-center text-muted-foreground text-sm">No orders found.</div>
+        ) : (
+          data.orders.map((order) => (
+            <div key={order._id} className="rounded-lg border bg-card p-4 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-xs text-muted-foreground tracking-wide">
+                  …{order._id.slice(-8).toUpperCase()}
+                </span>
+                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_PILL[order.status]}`}>
+                  {STATUS_LABELS[order.status]}
+                </span>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">{ownerName(order.ownerId)}</p>
+                <p className="text-xs text-muted-foreground">{order.ownerId.email}</p>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm text-muted-foreground">{order.cardId.title ?? "Untitled"}</p>
+                  <p className="text-xs text-muted-foreground">{fmtDate(order.submittedAt ?? order.createdAt)}</p>
+                </div>
+                <Link href={`/admin/orders/${order._id}`}>
+                  <Button size="sm" variant="outline">View</Button>
+                </Link>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
       {/* Pagination */}
       {data && data.totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <span className="text-sm text-muted-foreground">
-            {data.total} order{data.total !== 1 ? "s" : ""} &middot; page {data.page} of{" "}
-            {data.totalPages}
+            {data.total} order{data.total !== 1 ? "s" : ""} &middot; page {data.page} of {data.totalPages}
           </span>
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-            >
+            <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
               Previous
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={page >= data.totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
+            <Button size="sm" variant="outline" disabled={page >= data.totalPages} onClick={() => setPage((p) => p + 1)}>
               Next
             </Button>
           </div>
