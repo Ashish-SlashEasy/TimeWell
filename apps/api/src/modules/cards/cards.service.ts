@@ -6,7 +6,7 @@ import { Card, CardDoc, Contribution, Order, User } from "../../models";
 import { AppError } from "../../utils/AppError";
 import { generateShareToken } from "../../utils/tokens";
 import { hashPassword, comparePassword } from "../../utils/password";
-import { uploadBuffer, deleteFile } from "../../utils/storage";
+import { uploadBuffer, deleteFile, downloadBuffer } from "../../utils/storage";
 import { generateQrWithLogo, composeCardImage } from "../../utils/qr";
 import { env } from "../../config/env";
 import { containsProfanity } from "../../utils/profanity";
@@ -68,6 +68,25 @@ export class CardsService {
 
     if (input.title !== undefined) card.title = input.title;
     if (input.message !== undefined) card.message = input.message;
+
+    if (input.orientation !== undefined && input.orientation !== card.orientation && card.coverImage?.original) {
+      const originalBuf = await downloadBuffer(card.coverImage.original);
+      const shareUrl = `${env.WEB_APP_URL}/message/${card.shareToken}`;
+      const qrBuffer = await generateQrWithLogo(shareUrl);
+      const base = `cards/${card._id}/cover`;
+      const [webBuf, thumbBuf] = await Promise.all([
+        composeCardImage(originalBuf, input.orientation, qrBuffer, "web"),
+        composeCardImage(originalBuf, input.orientation, qrBuffer, "thumb"),
+      ]);
+      const [webUrl, thumbUrl] = await Promise.all([
+        uploadBuffer(`${base}/web.jpg`, webBuf, "image/jpeg"),
+        uploadBuffer(`${base}/thumb.jpg`, thumbBuf, "image/jpeg"),
+      ]);
+      card.coverImage.web = webUrl;
+      card.coverImage.thumb = thumbUrl;
+      card.coverImage.orientation = input.orientation;
+    }
+
     if (input.orientation !== undefined) card.orientation = input.orientation;
 
     if (input.settings) {

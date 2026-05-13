@@ -64,6 +64,19 @@ export async function uploadBuffer(
   });
 }
 
+export async function downloadBuffer(url: string): Promise<Buffer> {
+  if (useLocalStorage()) {
+    const uploadBase = `${env.API_PUBLIC_URL}/uploads/`;
+    if (url.startsWith(uploadBase)) {
+      const key = url.slice(uploadBase.length);
+      return fs.readFile(path.join(LOCAL_UPLOADS_DIR, key));
+    }
+  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to download image: ${res.status}`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
 export async function deleteFile(key: string): Promise<void> {
   if (useLocalStorage()) {
     try { await fs.unlink(path.join(LOCAL_UPLOADS_DIR, key)); } catch { /* ignore */ }

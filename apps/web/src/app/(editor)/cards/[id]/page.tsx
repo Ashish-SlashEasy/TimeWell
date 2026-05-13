@@ -210,8 +210,8 @@ function EditorHeader({ onBack, card, onCardUpdate, onPreview }: { onBack: () =>
               </a>
             )}
 
-            {/* Share button + dropdown panel */}
-            <div ref={shareRef} className="relative">
+            {/* Share button + dropdown panel — desktop only */}
+            <div ref={shareRef} className="relative hidden md:block">
               <button
                 onClick={() => setShowShare((v) => !v)}
                 className="h-9 w-9 flex items-center justify-center rounded-md border border-border bg-background hover:bg-muted transition-colors text-foreground/70"
@@ -563,11 +563,11 @@ function UploadPanel({ cardId, onUploaded }: { cardId: string; onUploaded: (c: C
 // ── Card preview ──────────────────────────────────────────────────────────────
 
 function CardPreview({
-  card, side, title, message,
+  card, side, title, message, orientation: orientationProp,
 }: {
-  card: Card; side: Side; title: string; message: string;
+  card: Card; side: Side; title: string; message: string; orientation?: "landscape" | "portrait";
 }) {
-  const isPortrait = card.orientation === "portrait";
+  const isPortrait = (orientationProp ?? card.orientation) === "portrait";
   const coverUrl = card.coverImage.web ?? card.coverImage.original ?? "";
   const shareUrl = card.shareToken ? `tw.life/${card.shareToken}` : "tw.life/…";
 
@@ -605,15 +605,15 @@ function CardPreview({
 
   return (
     <div className={cardCn} style={{ aspectRatio: cardRatio }}>
-      <div className="flex flex-col h-full px-10 py-10">
+      <div className="flex flex-col h-full px-6 py-6">
         {/* Title + message — near the top */}
-        <div className="flex flex-col items-center text-center gap-4 pt-4">
+        <div className="flex flex-col items-center text-center gap-2 pt-2">
           {title
-            ? <p className="font-serif text-5xl font-normal leading-tight text-gray-900">{title}</p>
-            : <p className="font-serif text-5xl font-normal text-gray-200">Your title</p>
+            ? <p className="font-serif text-2xl font-normal leading-tight text-gray-900">{title}</p>
+            : <p className="font-serif text-2xl font-normal text-gray-200">Your title</p>
           }
           {message && (
-            <p className="text-base text-gray-500 leading-relaxed max-w-[85%]">{message}</p>
+            <p className="text-xs text-gray-500 leading-relaxed max-w-[85%]">{message}</p>
           )}
         </div>
 
@@ -621,9 +621,9 @@ function CardPreview({
         <div className="flex-1" />
 
         {/* Footer */}
-        <div className="w-full flex items-center justify-between border-t border-gray-100 pt-3">
-          <span className="text-xs text-gray-400 tracking-wide">{shareUrl}</span>
-          <span className="font-serif text-base text-gray-700 tracking-wide">Timewell</span>
+        <div className="w-full flex items-center justify-between border-t border-gray-100 pt-2">
+          <span className="text-[10px] text-gray-400 tracking-wide">{shareUrl}</span>
+          <span className="font-serif text-xs text-gray-700 tracking-wide">Timewell</span>
         </div>
       </div>
     </div>
@@ -647,6 +647,8 @@ export default function CardDetailPage({ params }: Props) {
   const [tab, setTab] = useState<Tab>("image");
   const [side, setSide] = useState<Side>("front");
   const [showMobilePreview, setShowMobilePreview] = useState(false);
+  const [showMobileShare, setShowMobileShare] = useState(false);
+  const [copiedShare, setCopiedShare] = useState(false);
   const [previewSide, setPreviewSide] = useState<Side>("front");
 
   // Image tab
@@ -823,6 +825,15 @@ export default function CardDetailPage({ params }: Props) {
                   {t === "image" ? "Image" : t === "message" ? "Message" : "Sharing"}
                 </button>
               ))}
+              {/* Share icon — mobile only, right of Sharing tab */}
+              {card && (
+                <button
+                  onClick={() => setShowMobileShare(true)}
+                  className="md:hidden ml-auto mb-2.5 h-7 w-7 flex items-center justify-center rounded-md border border-border bg-background text-foreground/70 hover:bg-muted transition-colors shrink-0"
+                >
+                  <ArrowUp className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             {/* Tab content */}
@@ -1052,10 +1063,65 @@ export default function CardDetailPage({ params }: Props) {
               </div>
             </div>
             <div className={cn("flex-1 flex justify-center px-8 pb-8 w-full", orientation === "portrait" ? "items-start" : "items-center")}>
-              <CardPreview card={card} side={side} title={title} message={cardMessage} />
+              <CardPreview card={card} side={side} title={title} message={cardMessage} orientation={orientation} />
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Mobile share bottom sheet ── */}
+      {showMobileShare && card && (
+        <>
+          <div className="fixed inset-0 z-40 md:hidden" onClick={() => setShowMobileShare(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl bg-card border border-border shadow-xl p-5 space-y-4 md:hidden">
+            <div className="flex justify-center -mt-1 mb-1">
+              <div className="w-10 h-1 rounded-full bg-border" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-serif text-[26px] font-normal text-foreground leading-tight">Share this Card</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Send this link for others to view and add videos, photos and recordings to the Message Page.
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground mb-0.5">Message Page Link</p>
+                <p className="text-sm text-foreground truncate">
+                  {typeof window !== "undefined" ? window.location.origin : ""}/message/{card.shareToken}
+                </p>
+              </div>
+              <button
+                onClick={async () => {
+                  const url = `${window.location.origin}/message/${card.shareToken}`;
+                  await navigator.clipboard.writeText(url);
+                  setCopiedShare(true);
+                  setTimeout(() => setCopiedShare(false), 2000);
+                }}
+                className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {copiedShare ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+            {card.coverImage?.web && (
+              <a
+                href={card.coverImage.web}
+                download={`card-${card.shareToken}.jpg`}
+                className="w-full h-11 flex items-center justify-center rounded-md border border-input bg-background text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+              >
+                Download Card Image
+              </a>
+            )}
+            {card.printBundle?.qrPngKey && (
+              <a
+                href={card.printBundle.qrPngKey}
+                download={`qr-${card.shareToken}.png`}
+                className="w-full h-11 flex items-center justify-center rounded-md border border-input bg-background text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+              >
+                Download QR Code
+              </a>
+            )}
+          </div>
+        </>
       )}
 
       {/* ── Mobile card preview bottom sheet ── */}
@@ -1092,7 +1158,7 @@ export default function CardDetailPage({ params }: Props) {
               </div>
             </div>
             <div className="px-6 pb-8 pt-3 flex justify-center">
-              <CardPreview card={card} side={previewSide} title={title} message={cardMessage} />
+              <CardPreview card={card} side={previewSide} title={title} message={cardMessage} orientation={orientation} />
             </div>
           </div>
         </div>
